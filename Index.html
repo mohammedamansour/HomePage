@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Custom Homepage</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f2f2f2;
+    }
+    h1 {
+      text-align: center;
+    }
+    form {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    input[type="text"],
+    input[type="url"] {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+    input[type="submit"] {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    input[type="submit"]:hover {
+      background-color: #45a049;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      display: flex;
+      align-items: center;
+      background-color: #fff;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .bookmark-item input[type="checkbox"] {
+      margin-right: 10px;
+    }
+    .bookmark-item input[type="text"],
+    .bookmark-item input[type="url"] {
+      flex: 1;
+      padding: 5px;
+      font-size: 14px;
+    }
+    .bookmark-item a {
+      flex: 1;
+      color: #333;
+      text-decoration: none;
+    }
+    .bookmark-item button {
+      padding: 5px 10px;
+      background-color: #f44336;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    .bookmark-item button.edit-button {
+      background-color: #2196F3;
+    }
+    .bookmark-item button:hover {
+      background-color: #d32f2f;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Custom Homepage</h1>
+  <form id="bookmark-form">
+    <input type="text" id="title-input" placeholder="Title" required>
+    <input type="url" id="url-input" placeholder="URL" required>
+    <input type="submit" value="Add Bookmark">
+  </form>
+  <ul id="bookmark-list"></ul>
+
+  <script>
+    // Retrieve bookmarks from cache or create an empty array
+    const bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+
+    // Function to render the bookmarks on the page
+    function renderBookmarks() {
+      const bookmarkList = document.getElementById('bookmark-list');
+      bookmarkList.innerHTML = '';
+
+      bookmarks.forEach((bookmark, index) => {
+        const listItem = document.createElement('li');
+        listItem.className = 'bookmark-item';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.addEventListener('click', () => {
+          toggleBookmark(index);
+        });
+        checkbox.checked = bookmark.visited;
+
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.value = bookmark.title;
+        titleInput.className = 'hidden';
+        titleInput.addEventListener('change', (event) => {
+          editBookmarkTitle(index, event.target.value);
+        });
+
+        const urlInput = document.createElement('input');
+        urlInput.type = 'url';
+        urlInput.value = bookmark.url;
+        urlInput.className = 'hidden';
+        urlInput.addEventListener('change', (event) => {
+          editBookmarkURL(index, event.target.value);
+        });
+
+        const link = document.createElement('a');
+        link.href = bookmark.url;
+        link.textContent = bookmark.title;
+
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Edit';
+        editButton.className = 'edit-button';
+        editButton.addEventListener('click', () => {
+          toggleEditMode(index);
+        });
+
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.addEventListener('click', () => {
+          deleteBookmark(index);
+        });
+
+        listItem.appendChild(checkbox);
+        listItem.appendChild(titleInput);
+        listItem.appendChild(urlInput);
+        listItem.appendChild(link);
+        listItem.appendChild(editButton);
+        listItem.appendChild(deleteButton);
+
+        bookmarkList.appendChild(listItem);
+      });
+    }
+
+    // Function to toggle the visited status of a bookmark
+    function toggleBookmark(index) {
+      bookmarks[index].visited = !bookmarks[index].visited;
+      renderBookmarks();
+      saveBookmarks();
+    }
+
+    // Function to toggle edit mode for a bookmark
+    function toggleEditMode(index) {
+      const listItem = document.querySelectorAll('.bookmark-item')[index];
+      const titleInput = listItem.querySelector('input[type="text"]');
+      const urlInput = listItem.querySelector('input[type="url"]');
+      const link = listItem.querySelector('a');
+      const editButton = listItem.querySelector('button.edit-button');
+
+      if (titleInput.classList.contains('hidden')) {
+        titleInput.classList.remove('hidden');
+        urlInput.classList.remove('hidden');
+        link.classList.add('hidden');
+        editButton.textContent = 'Save';
+      } else {
+        titleInput.classList.add('hidden');
+        urlInput.classList.add('hidden');
+        link.classList.remove('hidden');
+        editButton.textContent = 'Edit';
+
+        const newTitle = titleInput.value;
+        const newURL = urlInput.value;
+        editBookmark(index, newTitle, newURL);
+      }
+    }
+
+    // Function to edit the title and URL of a bookmark
+    function editBookmark(index, newTitle, newURL) {
+      bookmarks[index].title = newTitle;
+      bookmarks[index].url = newURL;
+      renderBookmarks();
+      saveBookmarks();
+    }
+
+    // Function to delete a bookmark
+    function deleteBookmark(index) {
+      bookmarks.splice(index, 1);
+      renderBookmarks();
+      saveBookmarks();
+    }
+
+    // Function to save bookmarks to the cache
+    function saveBookmarks() {
+      localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+    }
+
+    // Function to add a new bookmark
+    function addBookmark(event) {
+      event.preventDefault();
+
+      const titleInput = document.getElementById('title-input');
+      const urlInput = document.getElementById('url-input');
+
+      const newBookmark = {
+        title: titleInput.value,
+        url: urlInput.value,
+        visited: false
+      };
+
+      bookmarks.push(newBookmark);
+      renderBookmarks();
+      saveBookmarks();
+
+      titleInput.value = '';
+      urlInput.value = '';
+    }
+
+    // Event listener for form submission
+    const bookmarkForm = document.getElementById('bookmark-form');
+    bookmarkForm.addEventListener('submit', addBookmark);
+
+    // Initial rendering of bookmarks
+    renderBookmarks();
+  </script>
+</body>
+</html>
